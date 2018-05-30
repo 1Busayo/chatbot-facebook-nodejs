@@ -3,7 +3,7 @@ module.exports = {
     FB_VERIFY_TOKEN: 'quickzap',
     API_AI_CLIENT_ACCESS_TOKEN: '6967211e3302479d9861392ad464d6bf',
     FB_APP_SECRET: 'fe1f1d5ad15ee2b6c3e82640d0f541bb',
-    SERVER_URL: "https://bitgoh.herokuapp.com/",
+    SERVER_URL: "https://bitgoh.herokuapp.com",
     SENGRID_API_KEY: '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',
     EMAIL_FROM: 'faniboy_me@yahoo.com',
     EMAIL_TO: 'faniboy_me@yahoo.com',
