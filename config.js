@@ -6,7 +6,7 @@ module.exports = {
     SERVER_URL: "https://bitgoh.herokuapp.com/",
     SENGRID_API_KEY: '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',
     EMAIL_FROM: 'faniboy_me@yahoo.com',
-    EMAIL_TO: 'fanimokunbusayo@gmail.com',
+    EMAIL_TO: 'faniboy_me@yahoo.com',
     WEATHER_API_KEY: '',
     ADMIN_ID: '',
     PG_CONFIG: {

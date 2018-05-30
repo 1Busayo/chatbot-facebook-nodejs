@@ -11,6 +11,9 @@ const uuid = require('uuid');
 
 
 // Messenger API parameters
+if (!config.SENGRID_API_KEY) { //used for SENDING EMAIL
+	throw new Error('missing SENGRID_API_KEY');
+}
 if (!config.FB_PAGE_TOKEN) {
 	throw new Error('missing FB_PAGE_TOKEN');
 }
@@ -23,9 +26,7 @@ if (!config.API_AI_CLIENT_ACCESS_TOKEN) {
 if (!config.FB_APP_SECRET) {
 	throw new Error('missing FB_APP_SECRET');
 }
-if (!config.SENGRID_API_KEY) { //used for SENDING EMAIL
-	throw new Error('missing SENGRID_API_KEY');
-}
+
 
 if (!config.EMAIL_FROM) { //used for ink to static files
 	throw new Error('missing EMAIL_FROM');
