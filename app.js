@@ -23,10 +23,21 @@ if (!config.API_AI_CLIENT_ACCESS_TOKEN) {
 if (!config.FB_APP_SECRET) {
 	throw new Error('missing FB_APP_SECRET');
 }
+if (!config.SENGRID_API_KEY) { //used for SENDING EMAIL
+	throw new Error('missing SENGRID_API_KEY');
+}
+
+if (!config.EMAIL_FROM) { //used for ink to static files
+	throw new Error('missing EMAIL_FROM');
+}
+
+if (!config.EMAIL_TO) { //used for ink to static files
+	throw new Error('missing EMAIL_TO');
+}
+
 if (!config.SERVER_URL) { //used for ink to static files
 	throw new Error('missing SERVER_URL');
 }
-
 
 
 app.set('port', (process.env.PORT || 5000))
@@ -184,9 +195,160 @@ function handleEcho(messageId, appId, metadata) {
 
 function handleApiAiAction(sender, action, responseText, contexts, parameters) {
 	switch (action) {
+		case "unsubscribe":
+            userService.newsletterSettings(function(updated) {
+                if (updated) {
+                    fbService.sendTextMessage(sender, "You're unsubscribed. You can always subscribe back!");
+                } else {
+                    fbService.sendTextMessage(sender, "Newsletter is not available at this moment." +
+                        "Try again later!");
+                }
+            }, 0, sender);
+			break;
+        case "buy.iphone":
+            colors.readUserColor(function(color) {
+                    let reply;
+                    if (color === '') {
+                        reply = 'In what color would you like to have it?';
+                    } else {
+                        reply = `Would you like to order it in your favourite color ${color}?`;
+                    }
+				fbService.sendTextMessage(sender, reply);
+
+                }, sender
+            )
+            break;
+        case "iphone_colors.favourite":
+            colors.updateUserColor(parameters['color'], sender);
+            let reply = `Oh, I like it, too. I'll remember that.`;
+			fbService.sendTextMessage(sender, reply);
+
+            break;
+        case "iphone-colors":
+            colors.readAllColors(function (allColors) {
+                let allColorsString = allColors.join(', ');
+                let reply = `IPhone 8 is available in ${allColorsString}. What is your favourite color?`;
+				fbService.sendTextMessage(sender, reply);
+            });
+
+            break;
+		case "get-current-weather":
+			if (parameters.hasOwnProperty("geo-city") && parameters["geo-city"]!='') {
+
+				weatherService(function(weatherResponse){
+					if (!weatherResponse) {
+						fbService.sendTextMessage(sender,
+							`No weather forecast available for ${parameters["geo-city"]}`);
+					} else {
+						let reply = `${responseText} ${weatherResponse}`;
+						fbService.sendTextMessage(sender, reply);
+					}
+
+
+				}, parameters["geo-city"]);
+
+				let reply = `${responseText} `;
+			} else {
+				fbService.sendTextMessage(sender, responseText);
+			}
+			break;
+		case "faq-delivery":
+			fbService.sendTextMessage(sender, responseText);
+			fbService.sendTypingOn(sender);
+
+			//ask what user wants to do next
+			setTimeout(function() {
+				let buttons = [
+					{
+						type:"web_url",
+						url:"https://www.myapple.com/track_order",
+						title:"Track my order"
+					},
+					{
+						type:"phone_number",
+						title:"Call us",
+						payload:"+16505551234",
+					},
+					{
+						type:"postback",
+						title:"Keep on Chatting",
+						payload:"CHAT"
+					}
+				];
+
+				fbService.sendButtonMessage(sender, "What would you like to do next?", buttons);
+			}, 3000)
+
+			break;
+		case "detailed-application":
+			if (isDefined(contexts[0]) &&
+				(contexts[0].name == 'job_application' || contexts[0].name == 'job-application-details_dialog_context')
+				&& contexts[0].parameters) {
+				let phone_number = (isDefined(contexts[0].parameters['phone-number'])
+				&& contexts[0].parameters['phone-number']!= '') ? contexts[0].parameters['phone-number'] : '';
+				let user_name = (isDefined(contexts[0].parameters['user-name'])
+				&& contexts[0].parameters['user-name']!= '') ? contexts[0].parameters['user-name'] : '';
+				let previous_job = (isDefined(contexts[0].parameters['previous-job'])
+				&& contexts[0].parameters['previous-job']!= '') ? contexts[0].parameters['previous-job'] : '';
+				let years_of_experience = (isDefined(contexts[0].parameters['years-of-experience'])
+				&& contexts[0].parameters['years-of-experience']!= '') ? contexts[0].parameters['years-of-experience'] : '';
+				let job_vacancy = (isDefined(contexts[0].parameters['job-vacancy'])
+				&& contexts[0].parameters['job-vacancy']!= '') ? contexts[0].parameters['job-vacancy'] : '';
+
+
+				if (phone_number == '' && user_name != '' && previous_job != '' && years_of_experience == '') {
+
+					let replies = [
+						{
+							"content_type":"text",
+							"title":"Less than 1 year",
+							"payload":"Less than 1 year"
+						},
+						{
+							"content_type":"text",
+							"title":"Less than 10 years",
+							"payload":"Less than 10 years"
+						},
+						{
+							"content_type":"text",
+							"title":"More than 10 years",
+							"payload":"More than 10 years"
+						}
+					];
+					fbService.sendQuickReply(sender, responseText, replies);
+				} else if (phone_number != '' && user_name != '' && previous_job != '' && years_of_experience != ''
+					&& job_vacancy != '') {
+					jobApplicationCreate(phone_number, user_name, previous_job, years_of_experience, job_vacancy);
+					fbService.sendTextMessage(sender, responseText);
+				} else {
+					fbService.sendTextMessage(sender, responseText);
+				}
+			}
+			break;
+		case "job-enquiry":
+			let replies = [
+				{
+					"content_type":"text",
+					"title":"Accountant",
+					"payload":"Accountant"
+				},
+				{
+					"content_type":"text",
+					"title":"Sales",
+					"payload":"Sales"
+				},
+				{
+					"content_type":"text",
+					"title":"Not interested",
+					"payload":"Not interested"
+				}
+			];
+			fbService.sendQuickReply(sender, responseText, replies);
+			break;
 		default:
 			//unhandled action, just send back the text
-			sendTextMessage(sender, responseText);
+			//console.log("send responce in handle actiongit: " + responseText);
+			fbService.sendTextMessage(sender, responseText);
 	}
 }
 
@@ -721,6 +883,19 @@ function receivedPostback(event) {
 	var payload = event.postback.payload;
 
 	switch (payload) {
+		case 'GET_STARTED':
+		//get feedback with new jobs
+		greetUserText(senderID);
+		break;
+		case 'JOB_APPLY':
+		//get feedback with new jobs
+		sendToApiAi(senderID,"job openings");
+		break;
+		case 'CHAT':
+		//user wants to chat
+		sendTextMessage(senderID,"I love chatting too. Do you have any other questions for me?");
+		break;
+		//user
 		default:
 			//unindentified payload
 			sendTextMessage(senderID, "I'm not sure what you want. Can you be more specific?");
@@ -853,6 +1028,31 @@ function verifyRequestSignature(req, res, buf) {
 		}
 	}
 }
+
+function sendEmail(subject, content){
+	var helper = require('sendgrid').mail;
+	var from_email = new helper.Email(config.EMAIL_FROM);
+	var to_email = new helper.Email(config.EMAIL_TO);
+	var subject = subject;
+	var content = new helper.Content('text/html', content);
+	var mail = new helper.Mail(from_email, subject, to_email, content);
+	
+	var sg = require('sendgrid')(config.SENDGRID_API_KEY);
+	var request = sg.emptyRequest({
+	  method: 'POST',
+	  path: '/v3/mail/send',
+	  body: mail.toJSON(),
+	});
+	
+	sg.API(request, function(error, response) {
+	  console.log(response.statusCode);
+	  console.log(response.body);
+	  console.log(response.headers);
+	});
+	
+
+}
+
 
 function isDefined(obj) {
 	if (typeof obj == 'undefined') {
