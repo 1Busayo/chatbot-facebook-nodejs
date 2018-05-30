@@ -11,9 +11,7 @@ const uuid = require('uuid');
 
 
 // Messenger API parameters
-if (!config.SENGRID_API_KEY) { //used for SENDING EMAIL
-	throw new Error('missing SENGRID_API_KEY');
-}
+
 if (!config.FB_PAGE_TOKEN) {
 	throw new Error('missing FB_PAGE_TOKEN');
 }
@@ -74,7 +72,7 @@ app.get('/', function (req, res) {
 })
 
 // for Facebook verification
-app.get('/webhook/', function (req, res) {
+/*app.get('/webhook/', function (req, res) {
 	console.log("request");
 	if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === config.FB_VERIFY_TOKEN) {
 		res.status(200).send(req.query['hub.challenge']);
@@ -84,7 +82,7 @@ app.get('/webhook/', function (req, res) {
 	}
 })
 
-/*
+
  * All callbacks for Messenger are POST-ed. They will be sent to the same
  * webhook. Be sure to subscribe your app to your page to receive callbacks
  * for your page. 
